@@ -27,6 +27,14 @@
         "projectId": "a2caf359-cb68-4f4a-86d1-5be6d5d8c5c0"
       }
     },
-    "owner": "gweeny"
+    "owner": "gweeny",
+    "plugins": [
+      "expo-font",
+      "expo-location",
+      "expo-notifications",
+      "expo-camera",
+      "expo-image-picker",
+      "expo-task-manager"
+    ]
   }
 }
