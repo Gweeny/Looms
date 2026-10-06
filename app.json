@@ -32,9 +32,16 @@
       "expo-font",
       "expo-location",
       "expo-notifications",
-      "expo-camera",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Looms a besoin de la caméra pour prendre des photos."
+        }
+      ],
       "expo-image-picker",
-      "expo-task-manager"
+      "expo-task-manager",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
     ]
   }
 }
