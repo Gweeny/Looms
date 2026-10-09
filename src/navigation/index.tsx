@@ -8,6 +8,8 @@ import { MapScreen } from "../screens/main/MapScreen";
 import { ShopScreen } from "../screens/main/ShopScreen";
 import { ProfileScreen } from "../screens/main/ProfileScreen";
 import { DropScreen } from "../screens/main/DropScreen";
+import { useAuth } from "@/contexte/authContext";
+import { RootStackParamList, MainTabParamList} from "@/types/navigation";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -30,14 +32,26 @@ function MainTabs() {
 }
 
 export function Navigation() {
+  const { user, loading } = useAuth();
+
+  if(loading) {
+    return null; 
+  }
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        <Stack.Screen name="Main" component={MainTabs} />
-        <Stack.Screen name="Drop" component={DropScreen} />
+        {user ? (
+          <>
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="Drop" component={DropScreen} />
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

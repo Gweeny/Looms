@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "401581009449",
+    "project_id": "looms-984a6",
+    "storage_bucket": "looms-984a6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:401581009449:android:9fe516f64afa9c96a5ca38",
+        "android_client_info": {
+          "package_name": "com.gweeny.Looms"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "401581009449-tdrbhlhdm221254qidgq806t47iji84d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAj3782nJhQh8yorHnbx_Q8nbRVi4xpW-M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "401581009449-tdrbhlhdm221254qidgq806t47iji84d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

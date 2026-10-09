@@ -4,6 +4,7 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { FontAssets } from "./src/constants/typography";
 import { Navigation } from "./src/navigation";
+import { AuthProvider } from "@/contexte/authContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -20,7 +21,9 @@ export default function App() {
 
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <Navigation />
+      <AuthProvider>
+        <Navigation />
+      </AuthProvider>
     </View>
   );
 }
