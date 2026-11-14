@@ -1,9 +1,9 @@
 export const Colors = {
-  background: "#001C68",
+  background: "#00154e",
   surface: "#002180",
-  accent: "#00635D",
+  accent: "#0036da",
   glints: "#FFD166",
-  text: "#F0F4FF",
-  textMuted: "#7B8FBF",
+  text: "#FFD166",
+  textMuted: "#9dbafd",
   error: "#E63946",
 } as const;

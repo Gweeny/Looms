@@ -5,11 +5,18 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 
+import {
+  Fredoka_600SemiBold,
+  Fredoka_700Bold,
+} from "@expo-google-fonts/fredoka";
+
 export const Fonts = {
   regular: "Inter_400Regular",
   medium: "Inter_500Medium",
   semiBold: "Inter_600SemiBold",
   bold: "Inter_700Bold",
+  fredokaSemiBold: "Fredoka_600SemiBold",
+  fredokaBold: "Fredoka_700Bold",
 } as const;
 
 export const FontAssets = {
@@ -17,4 +24,6 @@ export const FontAssets = {
   Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
+  Fredoka_600SemiBold,
+  Fredoka_700Bold,
 };

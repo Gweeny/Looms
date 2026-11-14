@@ -9,19 +9,25 @@ import { ShopScreen } from "../screens/main/ShopScreen";
 import { ProfileScreen } from "../screens/main/ProfileScreen";
 import { DropScreen } from "../screens/main/DropScreen";
 import { useAuth } from "@/contexte/authContext";
-import { RootStackParamList, MainTabParamList} from "@/types/navigation";
+import { RootStackParamList, MainTabParamList } from "@/types/navigation";
+import { LoomsLogo } from "@/components/logo";
+import { Colors } from "@/constants/colors";
+import { useOnboardingSeen } from "@/hooks/useOnboardingSeen";
 
-const Stack = createStackNavigator();
-const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
 function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: "#001C68", borderTopColor: "#002180" },
-        tabBarActiveTintColor: "#00635D",
-        tabBarInactiveTintColor: "#7B8FBF",
+        tabBarStyle: {
+          backgroundColor: Colors.background,
+          borderTopColor: Colors.surface,
+        },
+        tabBarActiveTintColor: Colors.accent,
+        tabBarInactiveTintColor: Colors.textMuted,
       }}
     >
       <Tab.Screen name="Map" component={MapScreen} />
@@ -33,21 +39,29 @@ function MainTabs() {
 
 export function Navigation() {
   const { user, loading } = useAuth();
-
-  if(loading) {
-    return null; 
-  }
+  const { seen } = useOnboardingSeen();
+  if (loading || seen === null) return null;
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        initialRouteName={seen ? "Login" : "Onboarding"}
+        screenOptions={{
+          headerShown: true,
+          headerTitle: () => <LoomsLogo size={28} />,
+          headerTitleAlign: "center",
+          headerStyle: { backgroundColor: Colors.background },
+          headerShadowVisible: false,
+          headerLeft: () => null,
+        }}
+      >
         {user ? (
           <>
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="Drop" component={DropScreen} />
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           </>
         ) : (
           <>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
           </>
