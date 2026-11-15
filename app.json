@@ -17,7 +17,12 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.gweeny.Looms"
+      "package": "com.gweeny.Looms",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCAWin2o1sI7QbLM_wjlbxcTLP_BGk8drU"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,7 +35,14 @@
     "owner": "gweeny",
     "plugins": [
       "expo-font",
-      "expo-location",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Looms utilise ta position pour révéler les messages cachés près de toi, même quand l'app est en arrière-plan.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
       "expo-notifications",
       [
         "expo-camera",
@@ -39,7 +51,8 @@
         }
       ],
       "expo-image-picker",
-      "expo-task-manager"
+      "expo-task-manager",
+      "expo-splash-screen"
     ]
   }
 }

@@ -13,6 +13,7 @@ import { RootStackParamList, MainTabParamList } from "@/types/navigation";
 import { LoomsLogo } from "@/components/logo";
 import { Colors } from "@/constants/colors";
 import { useOnboardingSeen } from "@/hooks/useOnboardingSeen";
+import { useExitConfirmation } from "@/hooks/useExitConfirmation";
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -40,6 +41,8 @@ function MainTabs() {
 export function Navigation() {
   const { user, loading } = useAuth();
   const { seen } = useOnboardingSeen();
+  useExitConfirmation();
+
   if (loading || seen === null) return null;
   return (
     <NavigationContainer>
