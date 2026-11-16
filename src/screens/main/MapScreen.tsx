@@ -1,11 +1,19 @@
 import { View, Text, StyleSheet } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
 import { Colors } from "@/constants/colors";
 import { Fonts } from "@/constants/typography";
-import { PermissionGate } from "@/components/permissionGate";
-import { useLocation } from "@/hooks/useLocation";
-import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
 import { MAP_STYLE } from "@/constants/mapStyle";
+import { PermissionGate } from "@/components/permissionGate";
+import { DraggableFab } from "@/components/draggableFab";
+import { useLocation } from "@/hooks/useLocation";
+import type { RootStackParamList } from "@/types/navigation";
+
+type Nav = StackNavigationProp<RootStackParamList>;
+
 export function MapScreen() {
+  const navigation = useNavigation<Nav>();
   const { permission, request, refresh, position, error } = useLocation();
 
   return (
@@ -45,6 +53,17 @@ export function MapScreen() {
         ) : (
           <Text style={styles.text}>Recherche de ta position…</Text>
         )}
+
+        <DraggableFab
+          icon="storefront-outline"
+          slot={0}
+          onPress={() => navigation.navigate("Shop")}
+        />
+        <DraggableFab
+          icon="account-outline"
+          slot={1}
+          onPress={() => navigation.navigate("Profile")}
+        />
       </View>
     </PermissionGate>
   );

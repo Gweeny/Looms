@@ -5,6 +5,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { FontAssets } from "./src/constants/typography";
 import { Navigation } from "./src/navigation";
 import { AuthProvider } from "@/contexte/authContext";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -20,10 +21,10 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <AuthProvider>
         <Navigation />
       </AuthProvider>
-    </View>
+    </GestureHandlerRootView>
   );
 }
