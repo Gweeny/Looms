@@ -3,7 +3,8 @@ import { Colors } from "@/constants/colors";
 import { Fonts } from "@/constants/typography";
 import { PermissionGate } from "@/components/permissionGate";
 import { useLocation } from "@/hooks/useLocation";
-
+import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
+import { MAP_STYLE } from "@/constants/mapStyle";
 export function MapScreen() {
   const { permission, request, refresh, position, error } = useLocation();
 
@@ -19,7 +20,28 @@ export function MapScreen() {
         {error ? (
           <Text style={styles.error}>{error}</Text>
         ) : position ? (
-          <Text style={styles.text}>Permission accordée</Text>
+          <MapView
+            style={StyleSheet.absoluteFill}
+            provider={PROVIDER_GOOGLE}
+            customMapStyle={MAP_STYLE}
+            showsUserLocation
+            showsBuildings
+            showsCompass={false}
+            showsMyLocationButton={false}
+            toolbarEnabled={false}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            pitchEnabled={false}
+            initialCamera={{
+              center: {
+                latitude: position.latitude,
+                longitude: position.longitude,
+              },
+              pitch: 0,
+              zoom: 17,
+              heading: 0,
+            }}
+          />
         ) : (
           <Text style={styles.text}>Recherche de ta position…</Text>
         )}
