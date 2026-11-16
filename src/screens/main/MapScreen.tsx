@@ -9,12 +9,29 @@ import { PermissionGate } from "@/components/permissionGate";
 import { DraggableFab } from "@/components/draggableFab";
 import { useLocation } from "@/hooks/useLocation";
 import type { RootStackParamList } from "@/types/navigation";
+import { useEffect, useRef } from "react";
+
+const CAMERA_PITCH = 40;
+const CAMERA_ZOOM = 18.5;
 
 type Nav = StackNavigationProp<RootStackParamList>;
 
 export function MapScreen() {
   const navigation = useNavigation<Nav>();
   const { permission, request, refresh, position, error } = useLocation();
+  const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    if (!position) return;
+    mapRef.current?.animateCamera(
+      {
+        center: { latitude: position.latitude, longitude: position.longitude },
+        pitch: CAMERA_PITCH,
+        zoom: CAMERA_ZOOM,
+      },
+      { duration: 1000 },
+    );
+  }, [position]);
 
   return (
     <PermissionGate
@@ -29,6 +46,7 @@ export function MapScreen() {
           <Text style={styles.error}>{error}</Text>
         ) : position ? (
           <MapView
+            ref={mapRef}
             style={StyleSheet.absoluteFill}
             provider={PROVIDER_GOOGLE}
             customMapStyle={MAP_STYLE}
@@ -45,8 +63,8 @@ export function MapScreen() {
                 latitude: position.latitude,
                 longitude: position.longitude,
               },
-              pitch: 0,
-              zoom: 17,
+              pitch: CAMERA_PITCH,
+              zoom: CAMERA_ZOOM,
               heading: 0,
             }}
           />

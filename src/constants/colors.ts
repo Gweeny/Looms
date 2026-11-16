@@ -6,4 +6,5 @@ export const Colors = {
   text: "#FFD166",
   textMuted: "#9dbafd",
   error: "#E63946",
+  building: "#0e45dd",
 } as const;

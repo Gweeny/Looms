@@ -9,12 +9,12 @@ export const MAP_STYLE: MapStyleElement[] = [
   {
     featureType: "road",
     elementType: "geometry",
-    stylers: [{ color: Colors.surface }],
+    stylers: [{ color: Colors.building }],
   },
   {
     featureType: "water",
     elementType: "geometry",
-    stylers: [{ color: Colors.accent }],
+    stylers: [{ color: Colors.surface }],
   },
   {
     featureType: "road.highway",
