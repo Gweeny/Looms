@@ -9,7 +9,11 @@ import { PermissionGate } from "@/components/permissionGate";
 import { DraggableFab } from "@/components/draggableFab";
 import { useLocation } from "@/hooks/useLocation";
 import type { RootStackParamList } from "@/types/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { TouchableOpacity } from "react-native";
+import { useAuth } from "@/contexte/authContext";
+import { createLoom } from "@/services/looms";
+import { CompassButton } from "@/components/compassButton";
 
 const CAMERA_PITCH = 40;
 const CAMERA_ZOOM = 18.5;
@@ -17,10 +21,48 @@ const CAMERA_ZOOM = 18.5;
 type Nav = StackNavigationProp<RootStackParamList>;
 
 export function MapScreen() {
+  const { user } = useAuth();
+  const [testStatus, setTestStatus] = useState<string | null>(null);
   const navigation = useNavigation<Nav>();
   const { permission, request, refresh, position, error } = useLocation();
   const mapRef = useRef<MapView>(null);
+  const [heading, setHeading] = useState(0);
 
+  async function onCameraSettled() {
+    const camera = await mapRef.current?.getCamera();
+    if (camera) setHeading(camera.heading);
+  }
+  const lastUpdate = useRef(0);
+
+  async function onCameraMoving() {
+    const now = Date.now();
+    if (now - lastUpdate.current < 100) return;
+    lastUpdate.current = now;
+
+    const camera = await mapRef.current?.getCamera();
+    if (camera) setHeading(camera.heading);
+  }
+
+  function resetNorth() {
+    mapRef.current?.animateCamera({ heading: 0 }, { duration: 400 });
+  }
+  async function onTestLoom() {
+    if (!user || !position) return;
+    try {
+      await createLoom({
+        authorId: user.uid,
+        photoUrl: "https://picsum.photos/400",
+        text: "Loom de test",
+        latitude: position.latitude,
+        longitude: position.longitude,
+        durationMinutes: 10,
+      });
+      setTestStatus("Loom créé");
+    } catch (e) {
+      console.error(e);
+      setTestStatus("Erreur, voir le terminal");
+    }
+  }
   useEffect(() => {
     if (!position) return;
     mapRef.current?.animateCamera(
@@ -56,8 +98,10 @@ export function MapScreen() {
             showsMyLocationButton={false}
             toolbarEnabled={false}
             scrollEnabled={false}
+            onRegionChange={onCameraMoving}
             zoomEnabled={false}
             pitchEnabled={false}
+            onRegionChangeComplete={onCameraSettled}
             initialCamera={{
               center: {
                 latitude: position.latitude,
@@ -82,7 +126,12 @@ export function MapScreen() {
           slot={1}
           onPress={() => navigation.navigate("Profile")}
         />
+        <TouchableOpacity style={styles.container} onPress={onTestLoom}>
+          <Text style={styles.text}>Créer un loom test</Text>
+        </TouchableOpacity>
+        {testStatus ? <Text style={styles.text}>{testStatus}</Text> : null}
       </View>
+      <CompassButton heading={heading} onPress={resetNorth} />
     </PermissionGate>
   );
 }
