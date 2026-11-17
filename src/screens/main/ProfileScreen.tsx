@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
-
+import { getAuth } from "firebase/auth";
 export function ProfileScreen() {
+  const auth = getAuth();
   return (
     <View
       style={{
@@ -10,7 +11,7 @@ export function ProfileScreen() {
         justifyContent: "center",
       }}
     >
-      <Text style={{ color: "#F0F4FF" }}>Map</Text>
+      <Text style={{ color: "#F0F4FF" }}>{auth.currentUser?.email}</Text>
     </View>
   );
 }
