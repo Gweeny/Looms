@@ -8,3 +8,4 @@ export const LOOM_DURATIONS = [
 
 export const DISCOVERY_RADIUS_METERS = 10;
 export const MAX_ACTIVE_LOOMS = 5;
+export const DISCOVERER_REWARD = 1;

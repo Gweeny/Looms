@@ -1,23 +1,31 @@
-import { View, Text, StyleSheet } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { Colors } from "@/constants/colors";
 import { Fonts } from "@/constants/typography";
+import { DISCOVERER_REWARD } from "@/constants/looms";
 import { MAP_STYLE } from "@/constants/mapStyle";
 import { PermissionGate } from "@/components/permissionGate";
 import { DraggableFab } from "@/components/draggableFab";
-import { useLocation } from "@/hooks/useLocation";
-import type { RootStackParamList } from "@/types/navigation";
-import { TouchableOpacity } from "react-native";
-import { useAuth } from "@/contexte/authContext";
-import { createLoom } from "@/services/looms";
 import { CompassButton } from "@/components/compassButton";
-import { useMyLooms } from "@/hooks/useMyLooms";
 import { LoomMarker } from "@/components/loomMarker";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { PulseCircle } from "@/components/pulseCircle";
 import { DropButton } from "@/components/dropButton";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { LoomSheet } from "@/components/loomSheet";
+import { useAuth } from "@/contexte/authContext";
+import { useLocation } from "@/hooks/useLocation";
+import { useActiveLooms } from "@/hooks/useActiveLooms";
+import { useDiscovery } from "@/hooks/useDiscovery";
+import { useMapLooms } from "@/hooks/useMapLooms";
+import type { MapLoom } from "@/hooks/useMapLooms";
+import { discoverLoom } from "@/services/discovery";
+import type { Loom } from "@/types/models";
+import type { RootStackParamList } from "@/types/navigation";
 
 const CAMERA_PITCH = 40;
 const CAMERA_ZOOM = 18.5;
@@ -25,20 +33,88 @@ const CAMERA_ZOOM = 18.5;
 type Nav = StackNavigationProp<RootStackParamList>;
 
 export function MapScreen() {
-  const { user } = useAuth();
-  const [testStatus, setTestStatus] = useState<string | null>(null);
   const navigation = useNavigation<Nav>();
+  const { user } = useAuth();
   const { permission, request, refresh, position, error } = useLocation();
+  const { looms, error: loomsError } = useActiveLooms();
+
+  const nearby = useDiscovery(position, user?.uid, looms);
+  const mapLooms = useMapLooms(user?.uid, looms, nearby);
+
   const mapRef = useRef<MapView>(null);
-  const [heading, setHeading] = useState(0);
-  const { looms, error: loomsError } = useMyLooms();
   const headingRef = useRef(0);
   const startHeading = useRef(0);
-  async function onCameraSettled() {
-    const camera = await mapRef.current?.getCamera();
-    if (camera) setHeading(camera.heading);
-  }
   const lastUpdate = useRef(0);
+  const [heading, setHeading] = useState(0);
+
+  const [selected, setSelected] = useState<Loom | null>(null);
+  const [reward, setReward] = useState<number | null>(null);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoverError, setDiscoverError] = useState<string | null>(null);
+
+  function followUser(duration: number) {
+    if (!position) return;
+    mapRef.current?.animateCamera(
+      {
+        center: { latitude: position.latitude, longitude: position.longitude },
+        heading: headingRef.current,
+        pitch: CAMERA_PITCH,
+        zoom: CAMERA_ZOOM,
+      },
+      { duration },
+    );
+  }
+
+  async function onDiscover(loomId: string) {
+    if (!user || discovering) return;
+    try {
+      setDiscovering(true);
+      setDiscoverError(null);
+      const loom = await discoverLoom(loomId, user.uid);
+      if (loom) {
+        setReward(DISCOVERER_REWARD);
+        setSelected(loom);
+      } else {
+        setDiscoverError("Ce loom n'est plus disponible.");
+      }
+    } catch (e) {
+      console.error("découverte:", e);
+      setDiscoverError("Découverte impossible. Vérifie ta connexion.");
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
+  function onMarkerPress(item: MapLoom) {
+    if (item.kind === "inRange") {
+      onDiscover(item.loom.id);
+      return;
+    }
+    setReward(null);
+    setSelected(item.loom);
+  }
+
+  function closeSheet() {
+    setSelected(null);
+    setReward(null);
+    followUser(300);
+  }
+
+  function recenter() {
+    if (!position) return;
+    headingRef.current = 0;
+    setHeading(0);
+    mapRef.current?.animateCamera(
+      {
+        center: { latitude: position.latitude, longitude: position.longitude },
+        heading: 0,
+        pitch: CAMERA_PITCH,
+        zoom: CAMERA_ZOOM,
+      },
+      { duration: 400 },
+    );
+  }
+
   const rotation = useMemo(
     () =>
       Gesture.Rotation()
@@ -73,56 +149,10 @@ export function MapScreen() {
         }),
     [position],
   );
-  async function onCameraMoving() {
-    const now = Date.now();
-    if (now - lastUpdate.current < 100) return;
-    lastUpdate.current = now;
 
-    const camera = await mapRef.current?.getCamera();
-    if (camera) setHeading(camera.heading);
-  }
-
-  async function onTestLoom() {
-    if (!user || !position) return;
-    try {
-      await createLoom({
-        authorId: user.uid,
-        photoUrl: "https://picsum.photos/400",
-        text: "Loom de test",
-        latitude: position.latitude,
-        longitude: position.longitude,
-        durationMinutes: 10,
-      });
-      setTestStatus("Loom créé");
-    } catch (e) {
-      console.error(e);
-      setTestStatus("Erreur, voir le terminal");
-    }
-  }
-  function recenter() {
-    if (!position) return;
-    headingRef.current = 0;
-    setHeading(0);
-    mapRef.current?.animateCamera(
-      {
-        center: { latitude: position.latitude, longitude: position.longitude },
-        heading: 0,
-        pitch: CAMERA_PITCH,
-        zoom: CAMERA_ZOOM,
-      },
-      { duration: 400 },
-    );
-  }
   useEffect(() => {
-    if (!position) return;
-    mapRef.current?.animateCamera(
-      {
-        center: { latitude: position.latitude, longitude: position.longitude },
-        pitch: CAMERA_PITCH,
-        zoom: CAMERA_ZOOM,
-      },
-      { duration: 1000 },
-    );
+    followUser(1000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [position]);
 
   return (
@@ -137,46 +167,63 @@ export function MapScreen() {
         {error ? (
           <Text style={styles.error}>{error}</Text>
         ) : position ? (
-          <>
-            <MapView
-              ref={mapRef}
-              style={StyleSheet.absoluteFill}
-              provider={PROVIDER_GOOGLE}
-              customMapStyle={MAP_STYLE}
-              showsUserLocation
-              showsBuildings
-              showsCompass={false}
-              showsMyLocationButton={false}
-              rotateEnabled={false}
-              toolbarEnabled={false}
-              scrollEnabled={false}
-              zoomEnabled={false}
-              pitchEnabled={false}
-              initialCamera={{
-                center: {
-                  latitude: position.latitude,
-                  longitude: position.longitude,
-                },
-                pitch: CAMERA_PITCH,
-                zoom: CAMERA_ZOOM,
-                heading: 0,
-              }}
-            >
-              {looms.map((loom) => (
-                <LoomMarker
-                  key={loom.id}
-                  latitude={loom.latitude}
-                  longitude={loom.longitude}
-                />
-              ))}
-            </MapView>
-            <GestureDetector gesture={rotation}>
-              <View style={StyleSheet.absoluteFill} />
-            </GestureDetector>
-          </>
+          <GestureDetector gesture={rotation}>
+            <View style={StyleSheet.absoluteFill}>
+              <MapView
+                ref={mapRef}
+                style={StyleSheet.absoluteFill}
+                provider={PROVIDER_GOOGLE}
+                customMapStyle={MAP_STYLE}
+                showsUserLocation
+                showsBuildings
+                showsCompass={false}
+                showsMyLocationButton={false}
+                rotateEnabled={false}
+                toolbarEnabled={false}
+                scrollEnabled={false}
+                zoomEnabled={false}
+                pitchEnabled={false}
+                initialCamera={{
+                  center: {
+                    latitude: position.latitude,
+                    longitude: position.longitude,
+                  },
+                  pitch: CAMERA_PITCH,
+                  zoom: CAMERA_ZOOM,
+                  heading: 0,
+                }}
+              >
+                {mapLooms
+                  .filter((item) => item.pulsing)
+                  .map((item) => (
+                    <PulseCircle
+                      key={`pulse-${item.loom.id}`}
+                      latitude={item.loom.latitude}
+                      longitude={item.loom.longitude}
+                    />
+                  ))}
+                {mapLooms.map((item) => (
+                  <LoomMarker
+                    key={item.loom.id}
+                    latitude={item.loom.latitude}
+                    longitude={item.loom.longitude}
+                    color={
+                      item.kind === "discovered" ? Colors.accent : Colors.glints
+                    }
+                    onPress={() => onMarkerPress(item)}
+                  />
+                ))}
+              </MapView>
+            </View>
+          </GestureDetector>
         ) : (
           <Text style={styles.text}>Recherche de ta position…</Text>
         )}
+
+        {loomsError ? <Text style={styles.banner}>{loomsError}</Text> : null}
+        {discoverError ? (
+          <Text style={styles.discoverError}>{discoverError}</Text>
+        ) : null}
 
         <DraggableFab
           icon="storefront-outline"
@@ -189,9 +236,18 @@ export function MapScreen() {
           onPress={() => navigation.navigate("Profile")}
         />
         <DropButton onPress={() => navigation.navigate("Drop")} />
-        {testStatus ? <Text style={styles.text}>{testStatus}</Text> : null}
+        <CompassButton heading={heading} onPress={recenter} />
+
+        {/* TEMPORAIRE : pour tester avec deux comptes, à supprimer ensuite */}
+        <TouchableOpacity
+          style={styles.tempLogout}
+          onPress={() => signOut(auth)}
+        >
+          <Text style={styles.pillText}>Déconnexion</Text>
+        </TouchableOpacity>
+
+        <LoomSheet loom={selected} reward={reward} onClose={closeSheet} />
       </View>
-      <CompassButton heading={heading} onPress={recenter} />
     </PermissionGate>
   );
 }
@@ -216,18 +272,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
-  button: {
-    backgroundColor: Colors.accent,
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "flex-end",
-    display: "flex",
-    alignSelf: "flex-end",
-    marginTop: 8,
+  banner: {
+    position: "absolute",
+    top: 120,
+    alignSelf: "center",
+    fontFamily: Fonts.regular,
+    color: Colors.error,
+    fontSize: 14,
   },
-  buttonText: {
+  discoverError: {
+    position: "absolute",
+    bottom: 140,
+    alignSelf: "center",
+    fontFamily: Fonts.regular,
+    color: Colors.error,
+  },
+  pillText: {
     fontFamily: Fonts.semiBold,
-    color: Colors.text,
+    color: Colors.glints,
     fontSize: 16,
+  },
+  tempLogout: {
+    position: "absolute",
+    top: 180,
+    left: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.glints,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
 });
