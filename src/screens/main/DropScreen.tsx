@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
   Text,
@@ -46,6 +47,7 @@ export function DropScreen() {
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const isDepositing = submitting || submitted;
   const online = useIsOnline();
@@ -77,13 +79,15 @@ export function DropScreen() {
 
   async function submit() {
     if (!user || !position || !photoBase64) return;
+
+    if (containsBannedWord(text)) {
+      setError("Ton message contient des mots interdits.");
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
-      if (text && containsBannedWord(text)) {
-        throw new Error("Le texte contient des mots interdits.");
-      }
-      // La modération du texte sera ajoutée ici, avant l'envoi.
       const photoUrl = await uploadPhoto(photoBase64);
 
       await createLoom({
@@ -154,71 +158,78 @@ export function DropScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.flex}
-      contentContainerStyle={styles.form}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Image source={{ uri: photoUri }} style={styles.preview} />
-      <TouchableOpacity
-        onPress={() => {
-          setPhotoUri(null);
-          setPhotoBase64(null);
-        }}
-        disabled={submitting}
+    <KeyboardAvoidingView style={styles.flex} behavior="padding">
+      <ScrollView
+        ref={scrollRef}
+        style={styles.flex}
+        contentContainerStyle={styles.form}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.link}>Reprendre la photo</Text>
-      </TouchableOpacity>
+        <Image source={{ uri: photoUri }} style={styles.preview} />
+        <TouchableOpacity
+          onPress={() => {
+            setPhotoUri(null);
+            setPhotoBase64(null);
+          }}
+          disabled={submitting}
+        >
+          <Text style={styles.link}>Reprendre la photo</Text>
+        </TouchableOpacity>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Laisse un message (facultatif)"
-        placeholderTextColor={Colors.textMuted}
-        value={text}
-        onChangeText={setText}
-        maxLength={MAX_TEXT_LENGTH}
-        multiline
-      />
-      <Text style={styles.counter}>
-        {text.length}/{MAX_TEXT_LENGTH}
-      </Text>
-
-      <Text style={styles.label}>Durée de vie</Text>
-      <View style={styles.durations}>
-        {LOOM_DURATIONS.map((option) => {
-          const selected = durationMinutes === option.minutes;
-          return (
-            <TouchableOpacity
-              key={option.minutes}
-              style={[styles.chip, selected && styles.chipSelected]}
-              onPress={() => setDurationMinutes(option.minutes)}
-              disabled={submitting}
-            >
-              <Text
-                style={[styles.chipLabel, selected && styles.chipLabelSelected]}
-              >
-                {option.label}
-              </Text>
-              <Text style={styles.chipGain}>
-                {option.glintsPerView} G / vue
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <TouchableOpacity
-        style={[styles.button, submitting && styles.buttonDisabled]}
-        onPress={submit}
-        disabled={submitting}
-      >
-        <Text style={styles.buttonText}>
-          {submitting ? "Envoi…" : "Déposer le loom"}
+        <TextInput
+          style={styles.input}
+          placeholder="Laisse un message (facultatif)"
+          placeholderTextColor={Colors.textMuted}
+          value={text}
+          onChangeText={setText}
+          maxLength={MAX_TEXT_LENGTH}
+          multiline
+          onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        />
+        <Text style={styles.counter}>
+          {text.length}/{MAX_TEXT_LENGTH}
         </Text>
-      </TouchableOpacity>
-    </ScrollView>
+
+        <Text style={styles.label}>Durée de vie</Text>
+        <View style={styles.durations}>
+          {LOOM_DURATIONS.map((option) => {
+            const selected = durationMinutes === option.minutes;
+            return (
+              <TouchableOpacity
+                key={option.minutes}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => setDurationMinutes(option.minutes)}
+                disabled={submitting}
+              >
+                <Text
+                  style={[
+                    styles.chipLabel,
+                    selected && styles.chipLabelSelected,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+                <Text style={styles.chipGain}>
+                  {option.glintsPerView} G / vue
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <TouchableOpacity
+          style={[styles.button, submitting && styles.buttonDisabled]}
+          onPress={submit}
+          disabled={submitting}
+        >
+          <Text style={styles.buttonText}>
+            {submitting ? "Envoi…" : "Déposer le loom"}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
