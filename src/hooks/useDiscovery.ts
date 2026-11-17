@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { DISCOVERY_RADIUS_METERS } from "@/constants/looms";
 import { distanceMeters } from "@/utils/geo";
 import type { Loom } from "@/types/models";
 
@@ -9,22 +8,19 @@ export function useDiscovery(
   position: Coords | null,
   userId: string | undefined,
   looms: Loom[],
+  radiusMeters: number,
 ): Loom[] {
   return useMemo(() => {
     if (!position || !userId) return [];
     return looms
+      .map((loom) => ({ loom, distance: distanceMeters(position, loom) }))
       .filter(
-        (loom) =>
+        ({ loom, distance }) =>
           loom.authorId !== userId &&
-          loom.durationMinutes > 0 &&
-          loom.latitude !== undefined &&
-          loom.longitude !== undefined &&
-          loom.latitude !== null &&
-          loom.longitude !== null &&
-          distanceMeters(position, loom) <= DISCOVERY_RADIUS_METERS,
+          !loom.discoveredBy.includes(userId) &&
+          distance <= radiusMeters,
       )
-      .sort(
-        (a, b) => distanceMeters(position, a) - distanceMeters(position, b),
-      );
-  }, [position, userId, looms]);
+      .sort((a, b) => a.distance - b.distance)
+      .map(({ loom }) => loom);
+  }, [position, userId, looms, radiusMeters]);
 }

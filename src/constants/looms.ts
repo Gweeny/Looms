@@ -6,6 +6,14 @@ export const LOOM_DURATIONS = [
   { minutes: 1440, label: "24 h", glintsPerView: 1 },
 ] as const;
 
-export const DISCOVERY_RADIUS_METERS = 10;
+export const BASE_DETECTION_RADIUS_METERS = 25;
+export const MIN_DEPOSIT_DISTANCE_METERS = BASE_DETECTION_RADIUS_METERS;
+export const RADIUS_STEP_METERS = 10;
+export const RADIUS_UPGRADE_COST = 100;
+export const MAX_RADIUS_LEVEL = 3;
+
+export function detectionRadius(level: number): number {
+  return BASE_DETECTION_RADIUS_METERS + level * RADIUS_STEP_METERS;
+}
 export const MAX_ACTIVE_LOOMS = 5;
 export const DISCOVERER_REWARD = 1;

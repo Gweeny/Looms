@@ -6,6 +6,7 @@ import { FontAssets } from "./src/constants/typography";
 import { Navigation } from "./src/navigation";
 import { AuthProvider } from "@/contexte/authContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import "@/services/backgroundDiscovery";
 
 SplashScreen.preventAutoHideAsync();
 

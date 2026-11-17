@@ -7,6 +7,7 @@ export type AppUser = {
   loomsDeposed: number;
   loomsDiscovered: number;
   totalViews: number;
+  radiusLevel: number;
   createdAt: Timestamp;
 };
 

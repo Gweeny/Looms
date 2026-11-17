@@ -23,6 +23,7 @@ import { createLoom } from "@/services/looms";
 import { Colors } from "@/constants/colors";
 import { Fonts } from "@/constants/typography";
 import type { RootStackParamList } from "@/types/navigation";
+import { distanceMeters } from "@/utils/geo";
 
 type Nav = StackNavigationProp<RootStackParamList>;
 
@@ -88,7 +89,7 @@ export function DropScreen() {
         durationMinutes,
       });
       setSubmitted(true);
-      navigation.goBack();
+      navigation.popToTop();
     } catch (e) {
       console.error("dépôt:", e);
       setError(
@@ -115,14 +116,13 @@ export function DropScreen() {
         <Text style={styles.hint}>{blockReason}</Text>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate("Map")}
         >
           <Text style={styles.buttonText}>Retour à la carte</Text>
         </TouchableOpacity>
       </View>
     );
   }
-
   if (!photoUri) {
     return (
       <View style={styles.container}>

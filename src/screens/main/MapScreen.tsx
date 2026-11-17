@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Circle, PROVIDER_GOOGLE } from "react-native-maps";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Colors } from "@/constants/colors";
 import { Fonts } from "@/constants/typography";
-import { DISCOVERER_REWARD } from "@/constants/looms";
+import { DISCOVERER_REWARD, detectionRadius } from "@/constants/looms";
 import { MAP_STYLE } from "@/constants/mapStyle";
 import { PermissionGate } from "@/components/permissionGate";
 import { DraggableFab } from "@/components/draggableFab";
@@ -21,14 +21,18 @@ import { useAuth } from "@/contexte/authContext";
 import { useLocation } from "@/hooks/useLocation";
 import { useActiveLooms } from "@/hooks/useActiveLooms";
 import { useDiscovery } from "@/hooks/useDiscovery";
+import { useDiscoveryNotification } from "@/hooks/useDiscoveryNotifications";
 import { useMapLooms } from "@/hooks/useMapLooms";
 import type { MapLoom } from "@/hooks/useMapLooms";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { discoverLoom } from "@/services/discovery";
+import { distanceMeters } from "@/utils/geo";
 import type { Loom } from "@/types/models";
 import type { RootStackParamList } from "@/types/navigation";
-
+import { useBackgroundDiscovery } from "@/hooks/useBackgroundDiscovery";
 const CAMERA_PITCH = 40;
 const CAMERA_ZOOM = 18.5;
+const FOLLOW_MIN_DISTANCE = 2;
 
 type Nav = StackNavigationProp<RootStackParamList>;
 
@@ -37,14 +41,20 @@ export function MapScreen() {
   const { user } = useAuth();
   const { permission, request, refresh, position, error } = useLocation();
   const { looms, error: loomsError } = useActiveLooms();
+  const { profile } = useUserProfile(user?.uid);
 
-  const nearby = useDiscovery(position, user?.uid, looms);
+  const radius = detectionRadius(profile?.radiusLevel ?? 0);
+  const nearby = useDiscovery(position, user?.uid, looms, radius);
   const mapLooms = useMapLooms(user?.uid, looms, nearby);
-
+  useDiscoveryNotification(nearby, user?.uid, permission?.granted ?? false);
+  useBackgroundDiscovery(permission?.granted ?? false);
   const mapRef = useRef<MapView>(null);
   const headingRef = useRef(0);
   const startHeading = useRef(0);
   const lastUpdate = useRef(0);
+  const lastFollowed = useRef<{ latitude: number; longitude: number } | null>(
+    null,
+  );
   const [heading, setHeading] = useState(0);
 
   const [selected, setSelected] = useState<Loom | null>(null);
@@ -151,6 +161,13 @@ export function MapScreen() {
   );
 
   useEffect(() => {
+    if (!position) return;
+    const last = lastFollowed.current;
+    if (last && distanceMeters(last, position) < FOLLOW_MIN_DISTANCE) return;
+    lastFollowed.current = {
+      latitude: position.latitude,
+      longitude: position.longitude,
+    };
     followUser(1000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [position]);
@@ -193,6 +210,16 @@ export function MapScreen() {
                   heading: 0,
                 }}
               >
+                <Circle
+                  center={{
+                    latitude: position.latitude,
+                    longitude: position.longitude,
+                  }}
+                  radius={radius}
+                  strokeWidth={1.5}
+                  strokeColor={`${Colors.glints}99`}
+                  fillColor={`${Colors.glints}1A`}
+                />
                 {mapLooms
                   .filter((item) => item.pulsing)
                   .map((item) => (

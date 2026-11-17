@@ -70,6 +70,7 @@ export function RegisterScreen() {
         pseudo: data.pseudo,
         glints: 0,
         loomsDeposed: 0,
+        radiusLevel: 0,
         loomsDiscovered: 0,
         totalViews: 0,
         createdAt: new Date(),
