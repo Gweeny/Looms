@@ -13,6 +13,8 @@ import { LoomsLogo } from "@/components/logo";
 import { Colors } from "@/constants/colors";
 import { useOnboardingSeen } from "@/hooks/useOnboardingSeen";
 import { useExitConfirmation } from "@/hooks/useExitConfirmation";
+import { OfflineBanner } from "@/components/offlineBanner";
+import { View } from "react-native";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -26,40 +28,43 @@ export function Navigation() {
   const initialRoute = user ? "Map" : seen ? "Login" : "Onboarding";
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName={initialRoute}
-        screenOptions={{
-          headerShown: true,
-          headerTitle: () => <LoomsLogo size={28} />,
-          headerTitleAlign: "center",
-          headerStyle: { backgroundColor: Colors.background },
-          headerShadowVisible: false,
-          headerTintColor: Colors.glints,
-        }}
-      >
-        {user ? (
-          <>
-            <Stack.Screen
-              name="Map"
-              component={MapScreen}
-              options={{
-                headerTransparent: true,
-                headerStyle: { backgroundColor: "transparent" },
-              }}
-            />
-            <Stack.Screen name="Shop" component={ShopScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="Drop" component={DropScreen} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <View style={{ flex: 1 }}>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName={initialRoute}
+          screenOptions={{
+            headerShown: true,
+            headerTitle: () => <LoomsLogo size={28} />,
+            headerTitleAlign: "center",
+            headerStyle: { backgroundColor: Colors.background },
+            headerShadowVisible: false,
+            headerTintColor: Colors.glints,
+          }}
+        >
+          {user ? (
+            <>
+              <Stack.Screen
+                name="Map"
+                component={MapScreen}
+                options={{
+                  headerTransparent: true,
+                  headerStyle: { backgroundColor: "transparent" },
+                }}
+              />
+              <Stack.Screen name="Shop" component={ShopScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="Drop" component={DropScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Register" component={RegisterScreen} />
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+      <OfflineBanner />
+    </View>
   );
 }

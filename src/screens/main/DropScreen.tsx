@@ -23,7 +23,8 @@ import { createLoom } from "@/services/looms";
 import { Colors } from "@/constants/colors";
 import { Fonts } from "@/constants/typography";
 import type { RootStackParamList } from "@/types/navigation";
-import { distanceMeters } from "@/utils/geo";
+import { containsBannedWord } from "@/utils/moderation";
+import { useIsOnline } from "@/hooks/useIsOnline";
 
 type Nav = StackNavigationProp<RootStackParamList>;
 
@@ -47,14 +48,16 @@ export function DropScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const isDepositing = submitting || submitted;
-
+  const online = useIsOnline();
   const blockReason = isDepositing
     ? null
-    : loomsError
-      ? "Impossible de vérifier les looms autour de toi. Réessaie plus tard."
-      : user && position
-        ? getDepositBlockReason(position, user.uid, looms)
-        : null;
+    : !online
+      ? "Pas de connexion. Réessaie quand tu seras de nouveau en ligne."
+      : loomsError
+        ? "Impossible de vérifier les looms autour de toi. Réessaie plus tard."
+        : user && position
+          ? getDepositBlockReason(position, user.uid, looms)
+          : null;
 
   async function takePhoto() {
     try {
@@ -77,6 +80,9 @@ export function DropScreen() {
     try {
       setSubmitting(true);
       setError(null);
+      if (text && containsBannedWord(text)) {
+        throw new Error("Le texte contient des mots interdits.");
+      }
       // La modération du texte sera ajoutée ici, avant l'envoi.
       const photoUrl = await uploadPhoto(photoBase64);
 

@@ -7,7 +7,7 @@ import { Navigation } from "./src/navigation";
 import { AuthProvider } from "@/contexte/authContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "@/services/backgroundDiscovery";
-
+import { SafeAreaProvider } from "react-native-safe-area-context";
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
@@ -22,10 +22,12 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <AuthProvider>
-        <Navigation />
-      </AuthProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+        <AuthProvider>
+          <Navigation />
+        </AuthProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
