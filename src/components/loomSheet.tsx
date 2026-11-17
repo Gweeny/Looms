@@ -12,6 +12,8 @@ import { Colors } from "@/constants/colors";
 import { Fonts } from "@/constants/typography";
 import type { Loom } from "@/types/models";
 import { GlintsReward } from "./glintRewards";
+import { useAuth } from "@/contexte/authContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 type Props = {
   loom: Loom | null;
@@ -21,7 +23,8 @@ type Props = {
 
 export function LoomSheet({ loom, reward = null, onClose }: Props) {
   type ImageState = "loading" | "ready" | "error";
-
+  const { user } = useAuth();
+  const { profile, loading: authorLoading } = useUserProfile(loom?.authorId);
   function formatRemaining(ms: number): string {
     if (ms <= 0) return "Expiré";
 
@@ -42,6 +45,15 @@ export function LoomSheet({ loom, reward = null, onClose }: Props) {
 
   const remaining = loom ? loom.expiresAt.toMillis() - Date.now() : 0;
 
+  const authorLabel = !loom
+    ? ""
+    : loom.authorId === user?.uid
+      ? "Déposé par toi"
+      : authorLoading
+        ? "…"
+        : profile
+          ? `Déposé par ${profile.pseudo}`
+          : "Auteur inconnu";
   return (
     <Modal
       transparent
@@ -75,11 +87,7 @@ export function LoomSheet({ loom, reward = null, onClose }: Props) {
                   </View>
                 ) : null}
               </View>
-
-              <Text style={styles.message}>
-                {loom.text ? loom.text : "Pas de message, juste la photo."}
-              </Text>
-
+              <Text style={styles.author}>{authorLabel}</Text>
               <Text style={styles.hint}>
                 Vu {loom.views} fois · {formatRemaining(remaining)}
               </Text>
@@ -154,6 +162,11 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontSize: 13,
     textAlign: "center",
+  },
+  author: {
+    fontFamily: Fonts.semiBold,
+    color: Colors.glints,
+    fontSize: 15,
   },
   button: {
     backgroundColor: Colors.accent,
