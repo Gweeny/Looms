@@ -1,8 +1,10 @@
 import {
-  addDoc,
   collection,
+  doc,
+  increment,
   serverTimestamp,
   Timestamp,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -15,12 +17,13 @@ type NewLoom = {
   durationMinutes: number;
 };
 
-export async function createLoom(input: NewLoom) {
+export async function createLoom(input: NewLoom): Promise<void> {
   const expiresAt = Timestamp.fromMillis(
     Date.now() + input.durationMinutes * 60 * 1000,
   );
 
-  await addDoc(collection(db, "looms"), {
+  const batch = writeBatch(db);
+  batch.set(doc(collection(db, "looms")), {
     ...input,
     createdAt: serverTimestamp(),
     expiresAt,
@@ -28,4 +31,8 @@ export async function createLoom(input: NewLoom) {
     views: 0,
     discoveredBy: [],
   });
+  batch.update(doc(db, "users", input.authorId), {
+    loomsDeposed: increment(1),
+  });
+  await batch.commit();
 }

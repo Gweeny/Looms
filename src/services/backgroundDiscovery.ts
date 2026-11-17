@@ -68,3 +68,8 @@ export async function startBackgroundDiscovery(): Promise<void> {
     },
   });
 }
+export async function stopBackgroundDiscovery(): Promise<void> {
+  if (await Location.hasStartedLocationUpdatesAsync(DISCOVERY_TASK)) {
+    await Location.stopLocationUpdatesAsync(DISCOVERY_TASK);
+  }
+}

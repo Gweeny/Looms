@@ -264,15 +264,6 @@ export function MapScreen() {
         />
         <DropButton onPress={() => navigation.navigate("Drop")} />
         <CompassButton heading={heading} onPress={recenter} />
-
-        {/* TEMPORAIRE : pour tester avec deux comptes, à supprimer ensuite */}
-        <TouchableOpacity
-          style={styles.tempLogout}
-          onPress={() => signOut(auth)}
-        >
-          <Text style={styles.pillText}>Déconnexion</Text>
-        </TouchableOpacity>
-
         <LoomSheet loom={selected} reward={reward} onClose={closeSheet} />
       </View>
     </PermissionGate>
