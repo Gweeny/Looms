@@ -16,7 +16,11 @@ export function useMapLooms(
 
     for (const loom of looms) {
       if (loom.authorId === userId) {
-        result.push({ loom, kind: "mine", pulsing: false });
+        result.push({
+          loom,
+          kind: "mine",
+          pulsing: loom.discoveredBy.length === 0,
+        });
       } else if (loom.discoveredBy.includes(userId)) {
         result.push({ loom, kind: "discovered", pulsing: false });
       } else if (inRangeIds.has(loom.id)) {

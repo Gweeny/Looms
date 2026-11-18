@@ -22,6 +22,8 @@ export function useUserProfile(userId: string | undefined) {
             id: snap.id,
             ...data,
             radiusLevel: data.radiusLevel ?? 0,
+            slotsLevel: data.slotsLevel ?? 0,
+            zoomLevel: data.zoomLevel ?? 0,
           } as AppUser);
         }
         setLoading(false);

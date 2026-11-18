@@ -8,6 +8,8 @@ export type AppUser = {
   loomsDiscovered: number;
   totalViews: number;
   radiusLevel: number;
+  slotsLevel: number;
+  zoomLevel: number;
   createdAt: Timestamp;
 };
 

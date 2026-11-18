@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import MapView, { Circle, PROVIDER_GOOGLE } from "react-native-maps";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { Colors } from "@/constants/colors";
 import { Fonts } from "@/constants/typography";
 import { DISCOVERER_REWARD, detectionRadius } from "@/constants/looms";
@@ -22,16 +20,21 @@ import { useLocation } from "@/hooks/useLocation";
 import { useActiveLooms } from "@/hooks/useActiveLooms";
 import { useDiscovery } from "@/hooks/useDiscovery";
 import { useDiscoveryNotification } from "@/hooks/useDiscoveryNotifications";
+import { useBackgroundDiscovery } from "@/hooks/useBackgroundDiscovery";
 import { useMapLooms } from "@/hooks/useMapLooms";
 import type { MapLoom } from "@/hooks/useMapLooms";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { discoverLoom } from "@/services/discovery";
 import { distanceMeters } from "@/utils/geo";
+import {
+  CAMERA_PITCH,
+  clamp,
+  zoomForRadius,
+  zoomLimits,
+} from "@/utils/mapZoom";
 import type { Loom } from "@/types/models";
 import type { RootStackParamList } from "@/types/navigation";
-import { useBackgroundDiscovery } from "@/hooks/useBackgroundDiscovery";
-const CAMERA_PITCH = 40;
-const CAMERA_ZOOM = 18.5;
+
 const FOLLOW_MIN_DISTANCE = 2;
 
 type Nav = StackNavigationProp<RootStackParamList>;
@@ -42,15 +45,22 @@ export function MapScreen() {
   const { permission, request, refresh, position, error } = useLocation();
   const { looms, error: loomsError } = useActiveLooms();
   const { profile } = useUserProfile(user?.uid);
+  const [mapReady, setMapReady] = useState(false);
 
   const radius = detectionRadius(profile?.radiusLevel ?? 0);
+  const canZoom = (profile?.zoomLevel ?? 0) >= 1;
+  const limits = zoomLimits(radius);
+
   const nearby = useDiscovery(position, user?.uid, looms, radius);
   const mapLooms = useMapLooms(user?.uid, looms, nearby);
   useDiscoveryNotification(nearby, user?.uid, permission?.granted ?? false);
   useBackgroundDiscovery(permission?.granted ?? false);
+
   const mapRef = useRef<MapView>(null);
   const headingRef = useRef(0);
   const startHeading = useRef(0);
+  const zoomRef = useRef(zoomForRadius(radius));
+  const startZoom = useRef(zoomRef.current);
   const lastUpdate = useRef(0);
   const lastFollowed = useRef<{ latitude: number; longitude: number } | null>(
     null,
@@ -61,7 +71,10 @@ export function MapScreen() {
   const [reward, setReward] = useState<number | null>(null);
   const [discovering, setDiscovering] = useState(false);
   const [discoverError, setDiscoverError] = useState<string | null>(null);
-
+  const positionRef = useRef(position);
+  positionRef.current = position;
+  const radiusRef = useRef(radius);
+  radiusRef.current = radius;
   function followUser(duration: number) {
     if (!position) return;
     mapRef.current?.animateCamera(
@@ -69,11 +82,27 @@ export function MapScreen() {
         center: { latitude: position.latitude, longitude: position.longitude },
         heading: headingRef.current,
         pitch: CAMERA_PITCH,
-        zoom: CAMERA_ZOOM,
+        zoom: zoomRef.current,
       },
       { duration },
     );
   }
+  useFocusEffect(
+    useCallback(() => {
+      const timer = setTimeout(() => {
+        const current = positionRef.current;
+        if (!current) return;
+        zoomRef.current = zoomForRadius(radiusRef.current);
+        mapRef.current?.setCamera({
+          center: { latitude: current.latitude, longitude: current.longitude },
+          heading: headingRef.current,
+          pitch: CAMERA_PITCH,
+          zoom: zoomRef.current,
+        });
+      }, 150);
+      return () => clearTimeout(timer);
+    }, []),
+  );
 
   async function onDiscover(loomId: string) {
     if (!user || discovering) return;
@@ -113,16 +142,9 @@ export function MapScreen() {
   function recenter() {
     if (!position) return;
     headingRef.current = 0;
+    zoomRef.current = zoomForRadius(radius);
     setHeading(0);
-    mapRef.current?.animateCamera(
-      {
-        center: { latitude: position.latitude, longitude: position.longitude },
-        heading: 0,
-        pitch: CAMERA_PITCH,
-        zoom: CAMERA_ZOOM,
-      },
-      { duration: 400 },
-    );
+    followUser(400);
   }
 
   const rotation = useMemo(
@@ -145,7 +167,7 @@ export function MapScreen() {
             },
             heading: next,
             pitch: CAMERA_PITCH,
-            zoom: CAMERA_ZOOM,
+            zoom: zoomRef.current,
           });
 
           const now = Date.now();
@@ -159,6 +181,47 @@ export function MapScreen() {
         }),
     [position],
   );
+
+  const pinch = useMemo(
+    () =>
+      Gesture.Pinch()
+        .runOnJS(true)
+        .enabled(canZoom)
+        .onStart(() => {
+          startZoom.current = zoomRef.current;
+        })
+        .onUpdate((event) => {
+          if (!position) return;
+          const next = clamp(
+            startZoom.current + Math.log2(event.scale),
+            limits.min,
+            limits.max,
+          );
+          zoomRef.current = next;
+
+          mapRef.current?.setCamera({
+            center: {
+              latitude: position.latitude,
+              longitude: position.longitude,
+            },
+            heading: headingRef.current,
+            pitch: CAMERA_PITCH,
+            zoom: next,
+          });
+        }),
+    [position, canZoom, limits.min, limits.max],
+  );
+
+  const gestures = useMemo(
+    () => Gesture.Simultaneous(rotation, pinch),
+    [rotation, pinch],
+  );
+
+  useEffect(() => {
+    zoomRef.current = zoomForRadius(radius);
+    followUser(700);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [radius]);
 
   useEffect(() => {
     if (!position) return;
@@ -184,7 +247,7 @@ export function MapScreen() {
         {error ? (
           <Text style={styles.error}>{error}</Text>
         ) : position ? (
-          <GestureDetector gesture={rotation}>
+          <GestureDetector gesture={gestures}>
             <View style={StyleSheet.absoluteFill}>
               <MapView
                 ref={mapRef}
@@ -206,11 +269,13 @@ export function MapScreen() {
                     longitude: position.longitude,
                   },
                   pitch: CAMERA_PITCH,
-                  zoom: CAMERA_ZOOM,
+                  zoom: zoomRef.current,
                   heading: 0,
                 }}
+                onMapReady={() => setMapReady(true)}
               >
                 <Circle
+                  key={`radius-${radius}`}
                   center={{
                     latitude: position.latitude,
                     longitude: position.longitude,
@@ -231,7 +296,7 @@ export function MapScreen() {
                   ))}
                 {mapLooms.map((item) => (
                   <LoomMarker
-                    key={item.loom.id}
+                    key={`${item.loom.id}-${item.kind}`}
                     latitude={item.loom.latitude}
                     longitude={item.loom.longitude}
                     color={
@@ -264,6 +329,7 @@ export function MapScreen() {
         />
         <DropButton onPress={() => navigation.navigate("Drop")} />
         <CompassButton heading={heading} onPress={recenter} />
+
         <LoomSheet loom={selected} reward={reward} onClose={closeSheet} />
       </View>
     </PermissionGate>
@@ -304,21 +370,5 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     fontFamily: Fonts.regular,
     color: Colors.error,
-  },
-  pillText: {
-    fontFamily: Fonts.semiBold,
-    color: Colors.glints,
-    fontSize: 16,
-  },
-  tempLogout: {
-    position: "absolute",
-    top: 180,
-    left: 16,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.glints,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
   },
 });

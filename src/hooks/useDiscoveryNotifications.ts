@@ -14,7 +14,6 @@ export function useDiscoveryNotification(
     if (!enabled) return;
     setupNotifications()
       .then((granted) => {
-        console.log("notif permission:", granted);
         setAllowed(granted);
       })
       .catch((e) => console.error("notifications:", e));

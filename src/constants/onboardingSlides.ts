@@ -19,12 +19,12 @@ export const ONBOARDING_SLIDES: OnboardingSlide[] = [
     id: "2",
     icon: "compass-outline",
     title: "Découvre ceux des autres",
-    text: "Marche dans la ville. À moins de 10 mètres d'un loom, le message se révèle.",
+    text: "Marche dans la ville. Quand un loom est à portée, le message se révèle.",
   },
   {
     id: "3",
     icon: "star-four-points-outline",
     title: "Gagne des Glints",
-    text: "Chaque vue et chaque découverte te rapporte des Glints, à dépenser pour personnaliser ton profil.",
+    text: "Chaque vue et chaque découverte te rapporte des Glints, à dépenser pour améliorer ton rayon et ta carte.",
   },
 ];
