@@ -116,7 +116,7 @@ export function DropScreen() {
     }
   }
 
-  if (!position || loomsLoading) {
+  if (!position || loomsLoading || profileLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={Colors.glints} />

@@ -26,7 +26,6 @@ export function useDiscoveryNotification(
       nearby.map((loom) => loom.id),
     )
       .then((fresh) => {
-        console.log("notif:", { nearby: nearby.length, fresh: fresh.length });
         return fresh.length > 0 ? notifyLoomNearby(fresh.length) : undefined;
       })
       .catch((e) => console.error("notification:", e));

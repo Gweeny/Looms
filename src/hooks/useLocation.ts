@@ -28,16 +28,17 @@ export function useLocation() {
     return () => {
       cancelled = true;
       subscription?.remove();
-      Location;
     };
   }, [permission?.granted]);
 
   useEffect(() => {
     if (!permission?.granted) return;
 
-    Location.getCurrentPositionAsync().then((location) => {
-      setPosition(location.coords);
-    });
+    Location.getCurrentPositionAsync()
+      .then((location) => {
+        setPosition(location.coords);
+      })
+      .catch((err) => setError(err.message));
   }, [permission?.granted]);
 
   return { permission, request, refresh, position, error };

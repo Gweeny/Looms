@@ -45,7 +45,6 @@ export function MapScreen() {
   const { permission, request, refresh, position, error } = useLocation();
   const { looms, error: loomsError } = useActiveLooms();
   const { profile } = useUserProfile(user?.uid);
-  const [mapReady, setMapReady] = useState(false);
 
   const radius = detectionRadius(profile?.radiusLevel ?? 0);
   const canZoom = (profile?.zoomLevel ?? 0) >= 1;
@@ -272,7 +271,6 @@ export function MapScreen() {
                   zoom: zoomRef.current,
                   heading: 0,
                 }}
-                onMapReady={() => setMapReady(true)}
               >
                 <Circle
                   key={`radius-${radius}`}
