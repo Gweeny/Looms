@@ -17,7 +17,6 @@ import { PermissionGate } from "@/components/permissionGate";
 import { useAuth } from "@/contexte/authContext";
 import { useLocation } from "@/hooks/useLocation";
 import { useActiveLooms } from "@/hooks/useActiveLooms";
-import { LOOM_DURATIONS } from "@/constants/looms";
 import { getDepositBlockReason } from "@/utils/depositRules";
 import { uploadPhoto } from "@/services/cloudinary";
 import { createLoom } from "@/services/looms";
@@ -26,6 +25,8 @@ import { Fonts } from "@/constants/typography";
 import type { RootStackParamList } from "@/types/navigation";
 import { containsBannedWord } from "@/utils/moderation";
 import { useIsOnline } from "@/hooks/useIsOnline";
+import { LOOM_DURATIONS, maxActiveLooms } from "@/constants/looms";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 type Nav = StackNavigationProp<RootStackParamList>;
 
@@ -48,7 +49,7 @@ export function DropScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
-
+  const { profile, loading: profileLoading } = useUserProfile(user?.uid);
   const isDepositing = submitting || submitted;
   const online = useIsOnline();
   const blockReason = isDepositing
@@ -58,7 +59,12 @@ export function DropScreen() {
       : loomsError
         ? "Impossible de vérifier les looms autour de toi. Réessaie plus tard."
         : user && position
-          ? getDepositBlockReason(position, user.uid, looms)
+          ? getDepositBlockReason(
+              position,
+              user.uid,
+              looms,
+              maxActiveLooms(profile?.slotsLevel ?? 0),
+            )
           : null;
 
   async function takePhoto() {
