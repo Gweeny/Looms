@@ -91,7 +91,9 @@ export function LoomSheet({ loom, reward = null, onClose }: Props) {
               <Text style={styles.hint}>
                 Vu {loom.views} fois · {formatRemaining(remaining)}
               </Text>
-
+              {loom.text ? (
+                <Text style={styles.message}>{loom.text}</Text>
+              ) : null}
               <TouchableOpacity style={styles.button} onPress={onClose}>
                 <Text style={styles.buttonText}>Fermer</Text>
               </TouchableOpacity>
