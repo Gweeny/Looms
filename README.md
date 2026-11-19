@@ -363,4 +363,4 @@ Aucune configuration iOS n'a été testée. Le passage à iOS demande un compte 
 
 ## Auteur
 
-**Sam** : projet individuel, majeure Développement mobile, YNOV Campus, 2025/2026. Formateur : Yaniss Loisel.
+**Sam** : projet individuel, majeure Développement mobile, YNOV Campus, 2025/2026.
