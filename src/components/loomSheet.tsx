@@ -14,6 +14,7 @@ import type { Loom } from "@/types/models";
 import { GlintsReward } from "./glintRewards";
 import { useAuth } from "@/contexte/authContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useNow } from "@/hooks/useNow";
 
 type Props = {
   loom: Loom | null;
@@ -25,6 +26,7 @@ export function LoomSheet({ loom, reward = null, onClose }: Props) {
   type ImageState = "loading" | "ready" | "error";
   const { user } = useAuth();
   const { profile, loading: authorLoading } = useUserProfile(loom?.authorId);
+  const now = useNow(60_000);
   function formatRemaining(ms: number): string {
     if (ms <= 0) return "Expiré";
 
@@ -43,7 +45,7 @@ export function LoomSheet({ loom, reward = null, onClose }: Props) {
     setImageState("loading");
   }, [loom?.id]);
 
-  const remaining = loom ? loom.expiresAt.toMillis() - Date.now() : 0;
+  const remaining = loom ? loom.expiresAt.toMillis() - now : 0;
 
   const authorLabel = !loom
     ? ""
